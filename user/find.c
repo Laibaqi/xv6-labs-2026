@@ -4,6 +4,45 @@
 #include "kernel/param.h"
 #include "user/user.h"
 
+int matchhere(char *, char *);
+int matchstar(int, char *, char *);
+
+int
+match_regexp(char *re, char *text)
+{
+  if (re[0] == '^')
+    return matchhere(re + 1, text);
+  do {
+    if (matchhere(re, text))
+      return 1;
+  } while (*text++ != '\0');
+  return 0;
+}
+
+int
+matchhere(char *re, char *text)
+{
+  if (re[0] == '\0')
+    return 1;
+  if (re[1] == '*')
+    return matchstar(re[0], re + 2, text);
+  if (re[0] == '$' && re[1] == '\0')
+    return *text == '\0';
+  if (*text != '\0' && (re[0] == '.' || re[0] == *text))
+    return matchhere(re + 1, text + 1);
+  return 0;
+}
+
+int
+matchstar(int c, char *re, char *text)
+{
+  do {
+    if (matchhere(re, text))
+      return 1;
+  } while (*text != '\0' && (*text++ == c || c == '.'));
+  return 0;
+}
+
 char*
 fmtname(char *path)
 {
@@ -66,7 +105,7 @@ find(char *path, char *name, char **execargv, int execargc)
 
   switch(st.type){
   case T_FILE:
-    if(strcmp(fmtname(path), name) == 0)
+    if(match_regexp(name, fmtname(path)) || strcmp(fmtname(path), name) == 0)
       match(path, execargv, execargc);
     break;
 
@@ -87,7 +126,7 @@ find(char *path, char *name, char **execargv, int execargc)
         printf("find: cannot stat %s\n", buf);
         continue;
       }
-      if(strcmp(fmtname(buf), name) == 0)
+      if(match_regexp(name, fmtname(buf)) || strcmp(fmtname(buf), name) == 0)
         match(buf, execargv, execargc);
       if(st.type == T_DIR)
         find(buf, name, execargv, execargc);
