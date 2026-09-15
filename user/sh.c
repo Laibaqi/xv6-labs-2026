@@ -1,10 +1,9 @@
-// Shell.
-
 #include "kernel/types.h"
+#include "kernel/stat.h"
 #include "user/user.h"
 #include "kernel/fcntl.h"
 
-// Parsed command representation
+
 #define EXEC  1
 #define REDIR 2
 #define PIPE  3
@@ -49,12 +48,12 @@ struct backcmd {
   struct cmd *cmd;
 };
 
-int fork1(void); // Fork but panics on failure.
+int fork1(void); 
 void panic(char *);
 struct cmd *parsecmd(char *);
 void runcmd(struct cmd *) __attribute__((noreturn));
 
-// Execute cmd.  Never returns.
+
 void
 runcmd(struct cmd *cmd)
 {
@@ -131,24 +130,39 @@ runcmd(struct cmd *cmd)
   exit(0);
 }
 
-int
-getcmd(char *buf, int nbuf)
+
+#define HISTSIZE 16
+static char history[HISTSIZE][100];
+static int histcount = 0;
+
+void
+addhistory(char *cmd)
 {
-  write(2, "$ ", 2);
+  memmove(history[histcount % HISTSIZE], cmd, strlen(cmd) + 1);
+  histcount++;
+}
+
+int
+getcmd(char *buf, int nbuf, int interactive)
+{
+  if(interactive)
+    write(2, "$ ", 2);
   memset(buf, 0, nbuf);
   gets(buf, nbuf);
-  if (buf[0] == 0) // EOF
+  if(buf[0] == 0)
     return -1;
   return 0;
 }
+
 
 int
 main(void)
 {
   static char buf[100];
   int fd;
+  int interactive;
+  struct stat st;
 
-  // Ensure that three file descriptors are open.
   while ((fd = open("console", O_RDWR)) >= 0) {
     if (fd >= 3) {
       close(fd);
@@ -156,19 +170,39 @@ main(void)
     }
   }
 
-  // Read and run input commands.
-  while (getcmd(buf, sizeof(buf)) >= 0) {
+  interactive = (fstat(0, &st) == 0 && st.type == T_DEVICE);
+
+  while (getcmd(buf, sizeof(buf), interactive) >= 0) {
     char *cmd = buf;
     while (*cmd == ' ' || *cmd == '\t')
       cmd++;
-    if (*cmd == '\n') // is a blank command
+    if (*cmd == '\n' || *cmd == 0)
       continue;
-    if (cmd[0] == 'c' && cmd[1] == 'd' && cmd[2] == ' ') {
-      // Chdir must be called by the parent, not the child.
-      cmd[strlen(cmd) - 1] = 0; // chop \n
+
+    if (cmd[0] == '!' && cmd[1] >= '1' && cmd[1] <= '9') {
+      int n = atoi(cmd + 1) - 1;
+      if (n >= 0 && n < histcount && n >= histcount - HISTSIZE) {
+        memmove(buf, history[n % HISTSIZE], 100);
+        cmd = buf;
+        if(interactive)
+          fprintf(2, "%s", cmd);
+      } else {
+        fprintf(2, "sh: no such history entry\n");
+        continue;
+      }
+    }
+
+    if (cmd[0] == 'c' && cmd[1] == 'd' && (cmd[2] == ' ' || cmd[2] == '\n')) {
+      cmd[strlen(cmd)-1] = 0;
       if (chdir(cmd + 3) < 0)
         fprintf(2, "cannot cd %s\n", cmd + 3);
+      addhistory(buf);
+    } else if (cmd[0] == 'w' && cmd[1] == 'a' && cmd[2] == 'i' && cmd[3] == 't'
+               && (cmd[4] == '\n' || cmd[4] == 0)) {
+      wait(0);
+      addhistory(buf);
     } else {
+      addhistory(buf);
       if (fork1() == 0)
         runcmd(parsecmd(cmd));
       wait(0);
@@ -176,6 +210,7 @@ main(void)
   }
   exit(0);
 }
+
 
 void
 panic(char *s)
@@ -195,8 +230,8 @@ fork1(void)
   return pid;
 }
 
-//PAGEBREAK!
-// Constructors
+
+
 
 struct cmd *
 execcmd(void)
@@ -262,8 +297,8 @@ backcmd(struct cmd *subcmd)
   cmd->cmd = subcmd;
   return (struct cmd *)cmd;
 }
-//PAGEBREAK!
-// Parsing
+
+
 
 char whitespace[] = " \t\r\n\v";
 char symbols[] = "<|>&;()";
@@ -451,7 +486,7 @@ parseexec(char **ps, char *es)
   return ret;
 }
 
-// NUL-terminate all the counted strings.
+
 struct cmd *
 nulterminate(struct cmd *cmd)
 {
