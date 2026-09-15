@@ -28,6 +28,9 @@ process(int fd)
       }
       num = 0;
       in_num = 0;
+    } else {
+      num = 0;
+      in_num = 0;
     }
   }
   if(in_num && (num % 5 == 0 || num % 6 == 0))
