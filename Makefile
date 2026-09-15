@@ -280,6 +280,13 @@ ifeq ($(LAB),util)
 	UEXTRA += user/findtest.sh
 	UEXTRA += user/sixfive.txt
 	UPROGS += $U/_memdump
+	UPROGS += $U/_sleep
+	UPROGS += $U/_sixfive
+	UPROGS += $U/_find
+	UPROGS += $U/_uptime
+	UPROGS += $U/_pingpong
+	UPROGS += $U/_primes
+	UPROGS += $U/_xargs
 endif
 ifeq ($(LAB),syscall)
 	UEXTRA += user/exec.sh
