@@ -148,7 +148,8 @@ syscall(void)
       if (num == SYS_open || num == SYS_exec) {
         char arg_path[MAXPATH];
         if (argstr(0, arg_path, MAXPATH) >= 0) {
-          if (p->path[0] != 0 && strncmp(p->path, "-", MAXPATH) != 0 && strncmp(arg_path, p->path, MAXPATH) == 0) {
+          if (p->path[0] != 0 && strncmp(p->path, "-", MAXPATH) != 0 &&
+              strncmp(arg_path, p->path, MAXPATH) == 0) {
             allow = 1;
           }
         }
