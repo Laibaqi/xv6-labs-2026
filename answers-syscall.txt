@@ -1,0 +1,11 @@
+1. usertrap() (in kernel/trap.c) called syscall().
+
+2. p->trapframe->a7 contains the system call number (e.g., SYS_exec = 7 or SYS_SYS_exit = 2). It represents the system call number passed from user space in register a7.
+
+3. User mode (U-mode), as indicated by sstatus SPP bit being 0.
+
+4. The kernel panics at the instruction loading from address 0 (e.g., lw a3, 0(zero) or ld a3, 0(a0)). Register a3 (or a0 depending on compiler optimization) corresponds to the variable num.
+
+5. Address 0 is not mapped in the kernel's address space. Dereferencing NULL (address 0) causes a load page fault, confirmed by scause = 0xd (13, Load page fault).
+
+6. Process name: "initcode" (or "init"), pid: 1.
