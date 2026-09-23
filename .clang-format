@@ -1,7 +1,7 @@
 SortIncludes: Never
-ReflowComments: Never
+ReflowComments: false
 
-BreakAfterReturnType: TopLevelDefinitions
+AlwaysBreakAfterDefinitionReturnType: TopLevel
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterFunction: true
