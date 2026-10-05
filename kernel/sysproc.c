@@ -181,3 +181,40 @@ sys_cpupin(void)
   return 0;
 }
 #endif
+
+// Like pgaccess, but reports pages that have been written (PTE_D),
+// and clears the dirty bit after reading it.
+uint64
+sys_pgdirty(void)
+{
+  uint64 va, ubuf;
+  int npages;
+  char kbuf[64];
+  argaddr(0, &va);
+  argint(1, &npages);
+  argaddr(2, &ubuf);
+
+  if(npages < 0 || npages > 512)
+    return -1;
+
+  struct proc *p = myproc();
+  memset(kbuf, 0, sizeof(kbuf));
+
+  for(int i = 0; i < npages; i++){
+    uint64 a = va + (uint64)i * PGSIZE;
+    if(a >= MAXVA)
+      return -1;
+    pte_t *pte = walk(p->pagetable, a, 0);
+    if(pte == 0 || !(*pte & PTE_V) || !(*pte & PTE_U))
+      return -1;
+    if(*pte & PTE_D){
+      kbuf[i / 8] |= (1 << (i % 8));
+      *pte &= ~PTE_D;
+    }
+  }
+  sfence_vma();
+
+  if(copyout(p->pagetable, p->sz, ubuf, kbuf, (npages + 7) / 8) < 0)
+    return -1;
+  return 0;
+}

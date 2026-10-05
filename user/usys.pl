@@ -52,4 +52,5 @@ entry("vmprint");
 entry("rwlktest");
 entry("cpupin");
 entry("pgaccess");
+entry("pgdirty");
 entry("ksupernpte");

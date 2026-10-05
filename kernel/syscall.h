@@ -40,3 +40,4 @@
 #define SYS_cpupin    37
 #define SYS_pgaccess  38
 #define SYS_ksupernpte  39
+#define SYS_pgdirty     40

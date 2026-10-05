@@ -117,6 +117,7 @@ extern uint64 sys_recv(void);
 extern uint64 sys_pgpte(void);
 extern uint64 sys_vmprint(void);
 extern uint64 sys_pgaccess(void);
+extern uint64 sys_pgdirty(void);
 extern uint64 sys_ksupernpte(void);
 #endif
 #ifdef LAB_LOCK
@@ -159,6 +160,7 @@ static uint64 (*syscalls[])(void) = {
   [SYS_pgpte] = sys_pgpte,
   [SYS_vmprint] = sys_vmprint,
   [SYS_pgaccess] = sys_pgaccess,
+  [SYS_pgdirty] = sys_pgdirty,
   [SYS_ksupernpte] = sys_ksupernpte,
 #endif
 #ifdef LAB_LOCK
