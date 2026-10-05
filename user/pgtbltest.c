@@ -16,11 +16,21 @@ void ksuper_test();
 int
 main(int argc, char *argv[])
 {
+  printf("Name: Laiba Irfan | ERP: 31736\n");
   print_pgtbl();
+
+  printf("Name: Laiba Irfan | ERP: 31736\n");
   vmprint_test();
+
+  printf("Name: Laiba Irfan | ERP: 31736\n");
   pgaccess_test();
+
+  printf("Name: Laiba Irfan | ERP: 31736\n");
   ugetpid_test();
+
+  printf("Name: Laiba Irfan | ERP: 31736\n");
   ksuper_test();
+
   printf("pgtbltest: all tests succeeded\n");
   exit(0);
 }
