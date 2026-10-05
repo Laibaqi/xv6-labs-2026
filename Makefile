@@ -255,7 +255,8 @@ endif
 ifeq ($(LAB),pgtbl)
 UPROGS += \
 	$U/_pgtbltest \
-    $U/_dirtytest
+    $U/_dirtytest \
+    $U/_nulltest
 endif
 
 ifeq ($(LAB),lock)

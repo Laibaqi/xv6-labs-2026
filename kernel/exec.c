@@ -69,6 +69,8 @@ kexec(char *path, char **argv)
     if (ph.vaddr % PGSIZE != 0)
       goto bad;
     uint64 sz1;
+    if (sz < PGROUNDDOWN(ph.vaddr))
+      sz = PGROUNDDOWN(ph.vaddr);
     if ((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz,
                         flags2perm(ph.flags))) == 0)
       goto bad;
