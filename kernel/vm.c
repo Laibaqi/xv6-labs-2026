@@ -537,6 +537,8 @@ vmfault(pagetable_t pagetable, uint64 psz, uint64 va, int read)
 
   if (va >= psz)
     return 0;
+  if (va < PGSIZE)
+    return 0;
   va = PGROUNDDOWN(va);
   if (ismapped(pagetable, va)) {
     return 0;
