@@ -102,6 +102,7 @@ usertrap(void)
   return satp;
 }
 
+
 //
 // set up trapframe and control registers for a return to user space
 //
