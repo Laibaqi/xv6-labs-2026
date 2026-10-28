@@ -142,9 +142,19 @@ backtrace(void)
 
   printk("backtrace:\n");
   while (PGROUNDDOWN(fp) == stackpage) {
-  uint64 ra = *(uint64 *)(fp - 8);
-  printk("%p\n", (void *)ra);
-  fp = *(uint64 *)(fp - 16);
+    uint64 ra = *(uint64 *)(fp - 8);
+    const char *name, *file;
+    uint64 off;
+    int line;
+
+    if (ksym_lookup(ra - 1, &name, &off, &file, &line) == 0)
+      printk("%p\n", (void *)ra);
+    else if (file == 0)
+      printk("%p %s+0x%lx\n", (void *)ra, name, off + 1);
+    else
+      printk("%p %s+0x%lx (%s:%d)\n", (void *)ra, name, off + 1, file, line);
+
+    fp = *(uint64 *)(fp - 16);
   }
 }
 

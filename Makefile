@@ -93,6 +93,7 @@ CC = $(TOOLPREFIX)gcc
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
+NM = $(TOOLPREFIX)nm
 
 # Deterministic builds.
 DETFLAGS = -ffile-prefix-map=$(CURDIR)=.
@@ -140,8 +141,15 @@ endif
 
 LDFLAGS = -z max-page-size=4096
 
-$K/kernel: $(OBJS) $(OBJS_KCSAN) $K/kernel.ld
-	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $K/kernel $(OBJS) $(OBJS_KCSAN)
+$K/kernel: $(OBJS) $(OBJS_KCSAN) $K/ksym.o $K/ksymtab0.o $K/kernel.ld
+	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $K/kernel $(OBJS) $(OBJS_KCSAN) $K/ksym.o $K/ksymtab0.o
+ifdef KSYMS
+	$(NM) -n $K/kernel > $K/kernel.nm
+	$(OBJDUMP) --dwarf=decodedline $K/kernel > $K/kernel.lines
+	python3 $K/mksyms.py $K/kernel.nm $K/kernel.lines > $K/ksymtab.c
+	$(CC) $(CFLAGS) -c -o $K/ksymtab.o $K/ksymtab.c
+	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $K/kernel $(OBJS) $(OBJS_KCSAN) $K/ksym.o $K/ksymtab.o
+endif
 	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
 	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
 $(OBJS): EXTRAFLAG := $(KCSANFLAG)

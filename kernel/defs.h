@@ -78,6 +78,7 @@ int             printk(char*, ...) __attribute__ ((format (printf, 1, 2)));
 void            panic(char*) __attribute__((noreturn));
 void            printkinit(void);
 void            backtrace(void);
+int             ksym_lookup(uint64, const char**, uint64*, const char**, int*);
 
 // proc.c
 int             cpuid(void);
