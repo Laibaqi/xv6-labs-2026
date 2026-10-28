@@ -1,0 +1,24 @@
+Q1. Which registers hold function arguments? Which holds 13 in main's printf?
+    a0-a7 hold the first eight arguments. For printf("%d %d\n", f(8)+1, 13):
+    a0 = format string, a1 = 12, a2 = 13. So 13 is in a2.
+
+Q2. Where are the calls to f and g in main?
+    There are none. The compiler worked out f(8)+1 = 12 at compile time
+    and just does "li a1,12". g is also inlined into f.
+
+Q3. At what address is printf?
+    0x746 (from user/call.asm: "0000000000000746 <printf>:")
+
+Q4. What is in ra just after the jalr to printf in main?
+    The address of the instruction right after the jalr (jalr address + 4),
+    so printf's ret returns to the next line of main.
+
+Q5. Output of: unsigned int i = 0x00646c72; printf("H%x Wo%s", 57616, (char*)&i);
+    "He110 World". 57616 = 0xe110. RISC-V is little-endian, so i is stored
+    as bytes 72 6c 64 00 = 'r' 'l' 'd' '\0', giving "rld".
+    Big-endian: i would need to be 0x726c6400. 57616 would not change,
+    because %x prints the value, which doesn't depend on byte order.
+
+Q6. printf("x=%d y=%d", 3); what is printed after y=?
+    An unpredictable number: whatever happened to be in register a2,
+    because the caller never set it.
