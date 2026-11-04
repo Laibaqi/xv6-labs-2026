@@ -301,22 +301,21 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   pte_t *pte;
   uint64 pa, i;
   uint flags;
-  char *mem;
 
-  for (i = 0; i < sz; i += PGSIZE) {
+    for (i = 0; i < sz; i += PGSIZE) {
     if ((pte = walk(old, i, 0)) == 0)
       continue; // page table entry hasn't been allocated
     if ((*pte & PTE_V) == 0)
       continue; // physical page hasn't been allocated
     pa = PTE2PA(*pte);
+    // share the page instead of copying it: make writable pages
+    // read-only + COW in the parent, and map the same page in the child.
+    if (*pte & PTE_W)
+      *pte = (*pte & ~PTE_W) | PTE_COW;
     flags = PTE_FLAGS(*pte);
-    if ((mem = kalloc()) == 0)
+    if (mappages(new, i, PGSIZE, pa, flags) != 0)
       goto err;
-    memmove(mem, (char *)pa, PGSIZE);
-    if (mappages(new, i, PGSIZE, (uint64)mem, flags) != 0) {
-      kfree(mem);
-      goto err;
-    }
+    kaddref((void *)pa); // the child now uses this page too
   }
   return 0;
 
@@ -359,10 +358,15 @@ copyout(pagetable_t pagetable, uint64 psz, uint64 dstva, char *src, uint64 len)
       }
     }
 
-    pte = walk(pagetable, va0, 0);
-    // forbid copyout over read-only user text pages.
-    if ((*pte & PTE_W) == 0)
-      return -1;
+          pte = walk(pagetable, va0, 0);
+       if ((*pte & PTE_W) == 0) {
+         // forbid copyout over read-only user text pages,
+         if ((*pte & PTE_COW) == 0)
+           return -1;
+         // but give a copy-on-write page its own copy first.
+         if ((pa0 = vmfault(pagetable, psz, va0, 0)) == 0)
+           return -1;
+       }
 
     n = PGSIZE - (dstva - va0);
     if (n > len)
@@ -462,10 +466,22 @@ vmfault(pagetable_t pagetable, uint64 psz, uint64 va, int read)
 
   if (va >= psz)
     return 0;
-  va = PGROUNDDOWN(va);
-  if (ismapped(pagetable, va)) {
-    return 0;
-  }
+       va = PGROUNDDOWN(va);
+     if (ismapped(pagetable, va)) {
+       // write to a copy-on-write page: give this process its own copy.
+       pte_t *pte = walk(pagetable, va, 0);
+       if (read || (*pte & PTE_COW) == 0)
+         return 0; // a real error, e.g. writing to read-only code
+       uint64 pa = PTE2PA(*pte);
+       mem = (uint64)kalloc();
+       if (mem == 0)
+         return 0; // out of memory: the caller kills the process
+       memmove((void *)mem, (void *)pa, PGSIZE);
+       uint flags = (PTE_FLAGS(*pte) & ~PTE_COW) | PTE_W;
+       *pte = PA2PTE(mem) | flags;
+       kfree((void *)pa); // drop our reference to the shared page
+       return mem;
+     }
   mem = (uint64)kalloc();
   if (mem == 0)
     return 0;
